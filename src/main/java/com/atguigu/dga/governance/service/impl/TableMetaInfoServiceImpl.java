@@ -4,8 +4,10 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SimplePropertyPreFilter;
 import com.atguigu.dga.governance.bean.TableMetaInfo;
 import com.atguigu.dga.governance.mapper.TableMetaInfoMapper;
+import com.atguigu.dga.governance.service.TableMetaInfoExtraService;
 import com.atguigu.dga.governance.service.TableMetaInfoService;
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.apache.commons.lang3.time.DateFormatUtils;
@@ -23,7 +25,9 @@ import org.apache.thrift.TException;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.io.FileNotFoundException;
@@ -50,6 +54,10 @@ public class TableMetaInfoServiceImpl extends ServiceImpl<TableMetaInfoMapper, T
     @Value("${metasore.url}")
     private String metaStoreUrl;
 
+    @Autowired
+    @Lazy
+    TableMetaInfoExtraService tableMetaInfoExtraService;
+
 
     IMetaStoreClient iMetaStoreClient;
 
@@ -69,6 +77,9 @@ public class TableMetaInfoServiceImpl extends ServiceImpl<TableMetaInfoMapper, T
 
     public void initTableMeta(String assessDate, String dbName) {
         try {
+            // 幂等处理清理当天以存在的表信息
+            remove(new QueryWrapper<TableMetaInfo>().eq("assess_date",assessDate));
+
             List<String> allTableNames = iMetaStoreClient.getAllTables(dbName);
             List<TableMetaInfo> tableMetaInfos = new LinkedList<>();
             for (String tableName : allTableNames) {
@@ -100,6 +111,8 @@ public class TableMetaInfoServiceImpl extends ServiceImpl<TableMetaInfoMapper, T
             }
 
             // 补充辅助信息表
+           // addTableMetaInfoExtra(tableMetaInfos);
+            tableMetaInfoExtraService.initTableMetaInfoExtra(assessDate);
 
             System.out.println(allTableNames);
         } catch (TException e) {
