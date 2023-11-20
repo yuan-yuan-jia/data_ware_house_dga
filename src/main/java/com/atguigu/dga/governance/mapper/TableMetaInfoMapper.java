@@ -1,9 +1,14 @@
 package com.atguigu.dga.governance.mapper;
 
 import com.atguigu.dga.governance.bean.TableMetaInfo;
+import com.atguigu.dga.governance.bean.vo.TableMetaInfoVo;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
 
 /**
  * <p>
@@ -17,4 +22,9 @@ import org.apache.ibatis.annotations.Mapper;
 @DS("dga")
 public interface TableMetaInfoMapper extends BaseMapper<TableMetaInfo> {
 
+    @Select("${sql}")
+    List<TableMetaInfoVo> getTableMetaInfoListForQuery(@Param("sql") String sql);
+
+    @Select("${sql}")
+    long getRecordCount(@Param("sql") String sql);
 }

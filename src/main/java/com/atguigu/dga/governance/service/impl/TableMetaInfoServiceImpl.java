@@ -2,10 +2,13 @@ package com.atguigu.dga.governance.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SimplePropertyPreFilter;
+import com.atguigu.dga.governance.bean.TableMetaForQuery;
 import com.atguigu.dga.governance.bean.TableMetaInfo;
+import com.atguigu.dga.governance.bean.vo.TableMetaInfoVo;
 import com.atguigu.dga.governance.mapper.TableMetaInfoMapper;
 import com.atguigu.dga.governance.service.TableMetaInfoExtraService;
 import com.atguigu.dga.governance.service.TableMetaInfoService;
+import com.atguigu.dga.governance.utils.SqlUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -29,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -78,7 +82,7 @@ public class TableMetaInfoServiceImpl extends ServiceImpl<TableMetaInfoMapper, T
     public void initTableMeta(String assessDate, String dbName) {
         try {
             // 幂等处理清理当天以存在的表信息
-            remove(new QueryWrapper<TableMetaInfo>().eq("assess_date",assessDate));
+            remove(new QueryWrapper<TableMetaInfo>().eq("assess_date", assessDate));
 
             List<String> allTableNames = iMetaStoreClient.getAllTables(dbName);
             List<TableMetaInfo> tableMetaInfos = new LinkedList<>();
@@ -93,7 +97,7 @@ public class TableMetaInfoServiceImpl extends ServiceImpl<TableMetaInfoMapper, T
                 //hdfs元数据抽取
                 try {
                     extractMetaFromHdfs(tableMetaInfo);
-                }catch (FileNotFoundException e) {
+                } catch (FileNotFoundException e) {
                     System.out.println("File Not be Found:" + e.getMessage());
                 }
                 // 补充时间信息
@@ -111,7 +115,7 @@ public class TableMetaInfoServiceImpl extends ServiceImpl<TableMetaInfoMapper, T
             }
 
             // 补充辅助信息表
-           // addTableMetaInfoExtra(tableMetaInfos);
+            // addTableMetaInfoExtra(tableMetaInfos);
             tableMetaInfoExtraService.initTableMetaInfoExtra(assessDate);
 
             System.out.println(allTableNames);
@@ -160,24 +164,24 @@ public class TableMetaInfoServiceImpl extends ServiceImpl<TableMetaInfoMapper, T
         for (FileStatus childFileStatus : firstChildFileStatus) {
 
 
-
             if (childFileStatus.isDirectory()) {
                 //2.1 遍历到的节点是中间节点：处理计算 收集数据  下探展开：递归的回调
                 /// 本项目不需要收集数据和计算
                 /// 下探展开
 
                 try {
-                FileStatus[] childrenFileStatus = fileSystem.listStatus(childFileStatus.getPath());
+                    FileStatus[] childrenFileStatus = fileSystem.listStatus(childFileStatus.getPath());
 
                     getMetaFromHdfsRecurve(fileSystem, childrenFileStatus, tableMetaInfo);
-                }catch (FileNotFoundException e) {
+                } catch (FileNotFoundException e) {
                     System.out.println("warning :" + e.getMessage());
                 }
-            }else {
+            } else {
                 //2.2 是叶子节点：处理计算 收集数据 返回
                 // 结合副本数统计大小
                 long fileLen = childFileStatus.getLen();
-                tableMetaInfo.setTableSize(tableMetaInfo.getTableSize() == null?0L:tableMetaInfo.getTableSize() * childFileStatus.getReplication() + fileLen);
+                tableMetaInfo.setTableSize((tableMetaInfo.getTableSize() == null ? 0L : tableMetaInfo.getTableSize()) + fileLen);
+                tableMetaInfo.setTableTotalSize((tableMetaInfo.getTableTotalSize() == null ? 0L : tableMetaInfo.getTableTotalSize()) + fileLen * childFileStatus.getReplication());
                 // 最后修改时间
                 long modificationTime = childFileStatus.getModificationTime();
 
@@ -194,8 +198,6 @@ public class TableMetaInfoServiceImpl extends ServiceImpl<TableMetaInfoMapper, T
                 }
 
             }
-
-
 
 
         }
@@ -262,5 +264,86 @@ public class TableMetaInfoServiceImpl extends ServiceImpl<TableMetaInfoMapper, T
     @Override
     public void afterPropertiesSet() throws Exception {
         iMetaStoreClient = initMetaStoreClient();
+    }
+
+    @Override
+    public List<TableMetaInfoVo> getTableMetaListForQuery(TableMetaForQuery tableMetaForQuery) {
+        Integer pageNo = tableMetaForQuery.getPageNo();
+        if (pageNo == null || pageNo < 1) {
+            pageNo = 1;
+        }
+        Integer pageSize = tableMetaForQuery.getPageSize();
+        if (pageSize == null || pageSize < 1) {
+            pageSize = 20;
+        }
+        Integer limitFrom = (pageNo - 1) * pageSize;
+
+
+        // 同表名，最大评估日期
+        // select  from table_meta_info ti join table_meta_info_extra te on ti.schema_name = te.schema_name
+        // and ti.table_name = te.table_name
+        // where assess_date = (select max(assess_date) from table_meta_info ti2 where ti.schema_name = ti2.schema_name and ti.table_name = ti2.table_name)
+        // and table_name = xxx
+        // and schema_name = xxx
+        // and dwLevel = xxx
+        // limit limitFrom pageSize
+        StringBuilder sqlBuilder = new StringBuilder();
+
+        sqlBuilder.append("select ti.id ,ti.table_name,ti.schema_name,table_comment,table_size,table_total_size,tec_owner_user_name,busi_owner_user_name, table_last_access_time,table_last_modify_time from table_meta_info ti join table_meta_info_extra te on ti.schema_name = te.schema_name ")
+                .append(" and ti.table_name = te.table_name ")
+                .append(" where assess_date = (select max(assess_date) from table_meta_info ti2 where ti.schema_name = ti2.schema_name and ti.table_name = ti2.table_name)");
+
+        if (StringUtils.hasText(tableMetaForQuery.getTableName()) && StringUtils.hasText(tableMetaForQuery.getTableName().trim())) {
+            sqlBuilder.append(" and ti.table_name like '")
+                    .append(SqlUtil.filterUnsafeSql(tableMetaForQuery.getTableName()))
+                    .append("%' ");
+        }
+        if (StringUtils.hasText(tableMetaForQuery.getSchemaName()) && StringUtils.hasText(tableMetaForQuery.getSchemaName().trim())) {
+            sqlBuilder.append(" and ti.schema_name like '")
+                    .append(SqlUtil.filterUnsafeSql(tableMetaForQuery.getSchemaName()))
+                    .append("%' ");
+        }
+        if (StringUtils.hasText(tableMetaForQuery.getDwLevel()) && StringUtils.hasText(tableMetaForQuery.getDwLevel().trim())) {
+            sqlBuilder.append(" dwLevel = ")
+                    .append(SqlUtil.filterUnsafeSql(tableMetaForQuery.getDwLevel()))
+                    .append(" ");
+        }
+        sqlBuilder.append(" limit ")
+                .append(limitFrom)
+                .append(",")
+                .append(pageSize);
+
+        List<TableMetaInfoVo> tableMetaInfoList = baseMapper.getTableMetaInfoListForQuery(sqlBuilder.toString());
+
+
+        return tableMetaInfoList;
+    }
+
+    @Override
+    public long getRecordCount(TableMetaForQuery tableMetaForQuery) {
+        StringBuilder sqlBuilder = new StringBuilder();
+
+        sqlBuilder.append("select count(*) from table_meta_info ti join table_meta_info_extra te on ti.schema_name = te.schema_name ")
+                .append(" and ti.table_name = te.table_name ")
+                .append(" where assess_date = (select max(assess_date) from table_meta_info ti2 where ti.schema_name = ti2.schema_name and ti.table_name = ti2.table_name)");
+
+        if (StringUtils.hasText(tableMetaForQuery.getTableName()) && StringUtils.hasText(tableMetaForQuery.getTableName().trim())) {
+            sqlBuilder.append(" and ti.table_name like '")
+                    .append(SqlUtil.filterUnsafeSql(tableMetaForQuery.getTableName()))
+                    .append("%' ");
+        }
+        if (StringUtils.hasText(tableMetaForQuery.getSchemaName()) && StringUtils.hasText(tableMetaForQuery.getSchemaName().trim())) {
+            sqlBuilder.append(" and ti.schema_name like '")
+                    .append(SqlUtil.filterUnsafeSql(tableMetaForQuery.getSchemaName()))
+                    .append("%' ");
+        }
+        if (StringUtils.hasText(tableMetaForQuery.getDwLevel()) && StringUtils.hasText(tableMetaForQuery.getDwLevel().trim())) {
+            sqlBuilder.append(" dwLevel = ")
+                    .append(SqlUtil.filterUnsafeSql(tableMetaForQuery.getDwLevel()))
+                    .append(" ");
+        }
+
+
+        return baseMapper.getRecordCount(sqlBuilder.toString());
     }
 }
