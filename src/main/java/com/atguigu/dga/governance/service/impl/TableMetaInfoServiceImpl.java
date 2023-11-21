@@ -304,9 +304,9 @@ public class TableMetaInfoServiceImpl extends ServiceImpl<TableMetaInfoMapper, T
                     .append("%' ");
         }
         if (StringUtils.hasText(tableMetaForQuery.getDwLevel()) && StringUtils.hasText(tableMetaForQuery.getDwLevel().trim())) {
-            sqlBuilder.append(" dwLevel = ")
+            sqlBuilder.append(" and ti.table_name like '")
                     .append(SqlUtil.filterUnsafeSql(tableMetaForQuery.getDwLevel()))
-                    .append(" ");
+                    .append("%' ");
         }
         sqlBuilder.append(" limit ")
                 .append(limitFrom)
@@ -338,9 +338,9 @@ public class TableMetaInfoServiceImpl extends ServiceImpl<TableMetaInfoMapper, T
                     .append("%' ");
         }
         if (StringUtils.hasText(tableMetaForQuery.getDwLevel()) && StringUtils.hasText(tableMetaForQuery.getDwLevel().trim())) {
-            sqlBuilder.append(" dwLevel = ")
+            sqlBuilder.append(" and ti.table_name like '")
                     .append(SqlUtil.filterUnsafeSql(tableMetaForQuery.getDwLevel()))
-                    .append(" ");
+                    .append("%' ");
         }
 
 

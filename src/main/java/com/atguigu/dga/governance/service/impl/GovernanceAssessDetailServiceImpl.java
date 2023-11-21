@@ -1,15 +1,23 @@
 package com.atguigu.dga.governance.service.impl;
 
+import com.atguigu.dga.governance.assess.Assessor;
+import com.atguigu.dga.governance.bean.AssessParam;
 import com.atguigu.dga.governance.bean.GovernanceAssessDetail;
+import com.atguigu.dga.governance.bean.GovernanceMetric;
 import com.atguigu.dga.governance.bean.TableMetaInfo;
 import com.atguigu.dga.governance.mapper.GovernanceAssessDetailMapper;
 import com.atguigu.dga.governance.service.GovernanceAssessDetailService;
+import com.atguigu.dga.governance.service.GovernanceMetricService;
 import com.atguigu.dga.governance.service.TableMetaInfoService;
+import com.atguigu.dga.governance.utils.SpringBeanProvider;
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -28,13 +36,43 @@ public class GovernanceAssessDetailServiceImpl extends ServiceImpl<GovernanceAss
     @Autowired
     TableMetaInfoService tableMetaInfoService;
 
+    @Autowired
+    GovernanceMetricService metricService;
+
+
+    @Autowired
+    SpringBeanProvider beanProvider;
+
+
+
+    @Transactional
     public void mainAssess(String assessDate) {
+
+        //0 清理今天已经做过的考评
+        remove(new QueryWrapper<GovernanceAssessDetail>().eq("assess_date",assessDate));
+
         //1 提取要考评的元数据和辅助信息
         List<TableMetaInfo> tableMetaInfoList = tableMetaInfoService.getTableMetaInfoWithExtraList(assessDate);
         System.out.println(tableMetaInfoList);
         //2 提取要考评的指标
+        List<GovernanceMetric> metrics = metricService.list(new QueryWrapper<GovernanceMetric>().eq("is_disabled", "0"));
+
+        List<GovernanceAssessDetail> governanceAssessDetails = new ArrayList<>(10);
         //3 对每张表每个指标进行考评 --> 生成考评结果明细
+        for (TableMetaInfo tableMetaInfo : tableMetaInfoList) {
+            for (GovernanceMetric metric : metrics) {
+                String metricCode = metric.getMetricCode();
+                Assessor assessor = beanProvider.getBean(metricCode, Assessor.class);
+                AssessParam assessParam = new AssessParam();
+                assessParam.setAssessDate(assessDate);
+                assessParam.setGovernanceMetric(metric);
+                assessParam.setTableMetaInfo(tableMetaInfo);
+                GovernanceAssessDetail governanceAssessDetail = assessor.metricAssess(assessParam);
+                governanceAssessDetails.add(governanceAssessDetail);
+            }
+        }
         //4 把考评结果明细保存
+        saveBatch(governanceAssessDetails);
 
     }
 

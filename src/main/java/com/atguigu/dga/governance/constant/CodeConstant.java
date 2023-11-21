@@ -17,4 +17,7 @@ public class CodeConstant {
     public static final String SECURITY_LEVEL_INTERNAL="INTERNAL";  //内部
     public static final String SECURITY_LEVEL_SECRET="SECRET";  //保密
     public static final String SECURITY_LEVEL_HIGH="HIGH";  //高度机密
+
+    public static final String OWNER_UNSET = "未填写";
+
 }

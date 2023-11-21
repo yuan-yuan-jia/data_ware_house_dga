@@ -10,9 +10,12 @@ import com.atguigu.dga.governance.bean.vo.TableMetaInfoVo;
 import com.atguigu.dga.governance.service.TableMetaInfoExtraService;
 import com.atguigu.dga.governance.service.TableMetaInfoService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.text.ParseException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -67,6 +70,20 @@ public class TableMetaInfoController {
     public String saveTableExtra(@RequestBody TableMetaInfoExtra requestMetaInfoExtra) {
         requestMetaInfoExtra.setUpdateTime(new Date());
         metaInfoExtraService.saveOrUpdate(requestMetaInfoExtra);
+        return "success";
+    }
+
+    @PostMapping("/init-tables/{dbName}/{assessDate}")
+    public String initTables(@PathVariable("dbName") String dbName,
+                             @PathVariable("assessDate") String assessDate) throws ParseException {
+
+        if (StringUtils.isEmpty(dbName) || dbName.trim().isEmpty()) {
+            return "日期为空";
+        }
+        DateUtils.parseDate(assessDate,assessDate);
+
+        tableMetaInfoService.initTableMeta(assessDate,dbName);
+
         return "success";
     }
 

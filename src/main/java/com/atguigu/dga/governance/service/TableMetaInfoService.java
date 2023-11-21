@@ -22,4 +22,6 @@ public interface TableMetaInfoService extends IService<TableMetaInfo> {
     long getRecordCount(TableMetaForQuery tableMetaForQuery);
 
     List<TableMetaInfo> getTableMetaInfoWithExtraList(String assessDate);
+
+    void initTableMeta(String assessDate, String dbName);
 }
