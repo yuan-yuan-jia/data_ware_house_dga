@@ -19,6 +19,7 @@ public class TableHasCommentAssessor extends Assessor{
         if (StringUtils.isEmpty(tableComment) || tableComment.trim().isEmpty()) {
             governanceAssessDetail.setAssessScore(new BigDecimal("0"));
             governanceAssessDetail.setAssessProblem("表没有备注");
+            governanceAssessDetail.setAssessComment("表没有备注");
         }
     }
 }

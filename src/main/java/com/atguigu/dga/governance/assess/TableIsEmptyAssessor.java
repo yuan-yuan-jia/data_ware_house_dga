@@ -14,6 +14,7 @@ public class TableIsEmptyAssessor extends Assessor {
         if (tableSize == null || tableSize == 0) {
             governanceAssessDetail.setAssessScore(new BigDecimal("0"));
             governanceAssessDetail.setAssessProblem("表大小为空");
+            governanceAssessDetail.setAssessComment("表大小为空");
         }
     }
 }
