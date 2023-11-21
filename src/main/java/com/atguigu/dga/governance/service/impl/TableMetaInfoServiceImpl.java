@@ -346,4 +346,12 @@ public class TableMetaInfoServiceImpl extends ServiceImpl<TableMetaInfoMapper, T
 
         return baseMapper.getRecordCount(sqlBuilder.toString());
     }
+
+    @Override
+    public List<TableMetaInfo> getTableMetaInfoWithExtraList(String assessDate) {
+
+        // 由于需要避免循环查询数据库，所以要用带join的sql来进行查询
+        // 查询结果如何封装到有父子嵌套的对象中 需要借助xml来配置映射关系
+        return baseMapper.getTableMetaInfoWithExtraList(assessDate);
+    }
 }

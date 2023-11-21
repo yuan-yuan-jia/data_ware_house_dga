@@ -12,9 +12,9 @@ import java.util.function.Consumer;
 public class CodeGen3531 {
 
     public static void main(String[] args) {
-        //   String[] tables={ "governance_metric","governance_type","governance_assess_detail"};
+           String[] tables={ "governance_metric","governance_type","governance_assess_detail"};
         //  String[] tables={ "t_ds_task_definition","t_ds_task_instance"};
-        String[] tables={ "table_meta_info_extra"  };
+       // String[] tables={ "table_meta_info_extra"  };
 
         FastAutoGenerator.create("jdbc:mysql://hadoop102:3306/dga_0717","root","000000")
                 .globalConfig(builder -> {
