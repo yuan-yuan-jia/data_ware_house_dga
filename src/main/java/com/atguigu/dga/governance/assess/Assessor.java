@@ -23,6 +23,7 @@ public abstract class Assessor {
         governanceAssessDetail.setSchemaName(tableMetaInfo.getSchemaName());
         governanceAssessDetail.setMetricId(governanceMetric.getId()+"");
         governanceAssessDetail.setMetricName(governanceMetric.getMetricName());
+        governanceAssessDetail.setGovernanceType(governanceMetric.getGovernanceType());
 
 
 
