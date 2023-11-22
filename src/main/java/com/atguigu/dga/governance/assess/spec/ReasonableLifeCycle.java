@@ -1,7 +1,8 @@
-package com.atguigu.dga.governance.assess;
+package com.atguigu.dga.governance.assess.spec;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
+import com.atguigu.dga.governance.assess.Assessor;
 import com.atguigu.dga.governance.bean.AssessParam;
 import com.atguigu.dga.governance.bean.GovernanceAssessDetail;
 import com.atguigu.dga.governance.constant.CodeConstant;
