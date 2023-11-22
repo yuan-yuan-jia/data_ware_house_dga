@@ -67,6 +67,7 @@ public class GovernanceAssessDetailServiceImpl extends ServiceImpl<GovernanceAss
                 assessParam.setAssessDate(assessDate);
                 assessParam.setGovernanceMetric(metric);
                 assessParam.setTableMetaInfo(tableMetaInfo);
+                assessParam.setAllTableMetaInfoList(tableMetaInfoList);
                 GovernanceAssessDetail governanceAssessDetail = assessor.metricAssess(assessParam);
                 governanceAssessDetails.add(governanceAssessDetail);
             }

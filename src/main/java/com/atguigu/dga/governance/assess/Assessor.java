@@ -4,6 +4,7 @@ import com.atguigu.dga.governance.bean.AssessParam;
 import com.atguigu.dga.governance.bean.GovernanceAssessDetail;
 import com.atguigu.dga.governance.bean.GovernanceMetric;
 import com.atguigu.dga.governance.bean.TableMetaInfo;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -34,6 +35,16 @@ public abstract class Assessor {
         // 填写基本信息 各种名称id 时间 给默认分数
         // 负责处理报错
         // 调用子类检查问题 子类检查是否有问题，如果有 给低分和问题原因
+        String skipAssessTables = assessParam.getGovernanceMetric().getSkipAssessTables();
+        if (!StringUtils.isEmpty(skipAssessTables)) {
+            String[] assessTableArr = skipAssessTables.split(",");
+
+            for (String shouldSkipTableName : assessTableArr) {
+                if (assessParam.getTableMetaInfo().getTableName().equals(shouldSkipTableName)) {
+                    return governanceAssessDetail;
+                }
+            }
+        }
         try {
             checkProblem(governanceAssessDetail,assessParam);
         }catch (Exception e) {
