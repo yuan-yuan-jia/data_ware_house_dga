@@ -1,5 +1,7 @@
 package com.atguigu.dga.governance.bean;
 
+import com.atguigu.dga.ds.bean.TDsTaskDefinition;
+import com.atguigu.dga.ds.bean.TDsTaskInstance;
 import lombok.Data;
 
 import java.util.List;
@@ -10,5 +12,10 @@ public class AssessParam {
     private TableMetaInfo tableMetaInfo;
     private GovernanceMetric governanceMetric;
 
-    List<TableMetaInfo> allTableMetaInfoList;
+    private List<TableMetaInfo> allTableMetaInfoList;
+
+    // 表的任务定义
+    private TDsTaskDefinition tDsTaskDefinition;
+    // 表的任务定义
+    private List<TDsTaskInstance> tDsTaskInstances;
 }

@@ -1,5 +1,8 @@
 package com.atguigu.dga.governance.service.impl;
 
+import com.atguigu.dga.ds.bean.TDsTaskInstance;
+import com.atguigu.dga.ds.service.TDsTaskDefinitionService;
+import com.atguigu.dga.ds.service.TDsTaskInstanceService;
 import com.atguigu.dga.governance.assess.Assessor;
 import com.atguigu.dga.governance.bean.AssessParam;
 import com.atguigu.dga.governance.bean.GovernanceAssessDetail;
@@ -19,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -43,9 +47,14 @@ public class GovernanceAssessDetailServiceImpl extends ServiceImpl<GovernanceAss
     @Autowired
     SpringBeanProvider beanProvider;
 
+    @Autowired
+    TDsTaskDefinitionService taskDefinitionService;
+
+    @Autowired
+    TDsTaskInstanceService taskInstanceService;
 
 
-    @Transactional
+
     public void mainAssess(String assessDate) {
 
         //0 清理今天已经做过的考评
@@ -56,6 +65,12 @@ public class GovernanceAssessDetailServiceImpl extends ServiceImpl<GovernanceAss
         System.out.println(tableMetaInfoList);
         //2 提取要考评的指标
         List<GovernanceMetric> metrics = metricService.list(new QueryWrapper<GovernanceMetric>().eq("is_disabled", "0"));
+
+        //2.5 准备ds的任务定义和任务实例
+        //实例
+        Map<String, List<TDsTaskInstance>> taskInstanceListMap = taskInstanceService.getTaskInstanceList(assessDate);
+
+
 
         List<GovernanceAssessDetail> governanceAssessDetails = new ArrayList<>(10);
         //3 对每张表每个指标进行考评 --> 生成考评结果明细
@@ -68,6 +83,11 @@ public class GovernanceAssessDetailServiceImpl extends ServiceImpl<GovernanceAss
                 assessParam.setGovernanceMetric(metric);
                 assessParam.setTableMetaInfo(tableMetaInfo);
                 assessParam.setAllTableMetaInfoList(tableMetaInfoList);
+
+                // 当前表当天的任务列表
+                List<TDsTaskInstance> tDsTaskInstances = taskInstanceListMap.get(tableMetaInfo.getSchemaName() + "." + tableMetaInfo.getTableName());
+                assessParam.setTDsTaskInstances(tDsTaskInstances);
+
                 GovernanceAssessDetail governanceAssessDetail = assessor.metricAssess(assessParam);
                 governanceAssessDetails.add(governanceAssessDetail);
             }
