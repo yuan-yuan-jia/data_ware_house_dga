@@ -19,12 +19,12 @@ class Dga0717ApplicationTests {
 
     @Test
     void contextLoads() {
-        tableMetaInfoService.initTableMeta("2023-05-02", "gmall");
+        tableMetaInfoService.initTableMeta("2023-05-01", "gmall");
     }
 
     @Test
     void testAssess() {
-        detailService.mainAssess("2023-05-02");
+        detailService.mainAssess("2023-05-01");
     }
 
 }
