@@ -26,5 +26,9 @@ public class CodeConstant {
     public static final String DW_LEVEL_ADS = "ADS";
     public static final String DW_LEVEL_DM = "DM";
 
+    public static final Integer TASK_SUCCESS = 7;
+    public static final Integer TASK_FAIL = 6;
+
+
 
 }

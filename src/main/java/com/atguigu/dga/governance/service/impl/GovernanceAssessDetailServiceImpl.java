@@ -1,5 +1,6 @@
 package com.atguigu.dga.governance.service.impl;
 
+import com.atguigu.dga.ds.bean.TDsTaskDefinition;
 import com.atguigu.dga.ds.bean.TDsTaskInstance;
 import com.atguigu.dga.ds.service.TDsTaskDefinitionService;
 import com.atguigu.dga.ds.service.TDsTaskInstanceService;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -62,7 +64,7 @@ public class GovernanceAssessDetailServiceImpl extends ServiceImpl<GovernanceAss
 
         //1 提取要考评的元数据和辅助信息
         List<TableMetaInfo> tableMetaInfoList = tableMetaInfoService.getTableMetaInfoWithExtraList(assessDate);
-        System.out.println(tableMetaInfoList);
+        //System.out.println(tableMetaInfoList);
         //2 提取要考评的指标
         List<GovernanceMetric> metrics = metricService.list(new QueryWrapper<GovernanceMetric>().eq("is_disabled", "0"));
 
@@ -70,7 +72,9 @@ public class GovernanceAssessDetailServiceImpl extends ServiceImpl<GovernanceAss
         //实例
         Map<String, List<TDsTaskInstance>> taskInstanceListMap = taskInstanceService.getTaskInstanceList(assessDate);
 
-
+        //  定义
+        // 当天运行最后一次实例对应的任务定义取出来 map<表名,任务定义>
+        Map<String, TDsTaskDefinition> taskDefinitionMap = taskDefinitionService.getTaskDefinitionMap(assessDate);
 
         List<GovernanceAssessDetail> governanceAssessDetails = new ArrayList<>(10);
         //3 对每张表每个指标进行考评 --> 生成考评结果明细
@@ -83,10 +87,18 @@ public class GovernanceAssessDetailServiceImpl extends ServiceImpl<GovernanceAss
                 assessParam.setGovernanceMetric(metric);
                 assessParam.setTableMetaInfo(tableMetaInfo);
                 assessParam.setAllTableMetaInfoList(tableMetaInfoList);
+                Map<String, TableMetaInfo> allTableMetaMap = tableMetaInfoList.stream().collect(Collectors.toMap(tab -> {
+                    return tab.getSchemaName() + "." + tab.getTableName();
+                }, ta -> ta));
+                assessParam.setAllTableMetaInfoMap(allTableMetaMap);
 
                 // 当前表当天的任务列表
                 List<TDsTaskInstance> tDsTaskInstances = taskInstanceListMap.get(tableMetaInfo.getSchemaName() + "." + tableMetaInfo.getTableName());
                 assessParam.setTDsTaskInstances(tDsTaskInstances);
+
+
+                TDsTaskDefinition tDsTaskDefinition = taskDefinitionMap.get(tableMetaInfo.getSchemaName() + "." + tableMetaInfo.getTableName());
+                assessParam.setTDsTaskDefinition(tDsTaskDefinition);
 
                 GovernanceAssessDetail governanceAssessDetail = assessor.metricAssess(assessParam);
                 governanceAssessDetails.add(governanceAssessDetail);

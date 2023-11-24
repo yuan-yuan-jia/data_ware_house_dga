@@ -103,8 +103,8 @@ public class TableMetaInfoServiceImpl extends ServiceImpl<TableMetaInfoMapper, T
                 // 补充时间信息
                 tableMetaInfo.setAssessDate(assessDate);
                 tableMetaInfo.setCreateTime(new Date());
-                System.out.println(tableMetaInfo);
-                tableMetaInfos.add(tableMetaInfo);
+               // System.out.println(tableMetaInfo);
+               // tableMetaInfos.add(tableMetaInfo);
 
             }
 
@@ -118,7 +118,7 @@ public class TableMetaInfoServiceImpl extends ServiceImpl<TableMetaInfoMapper, T
             // addTableMetaInfoExtra(tableMetaInfos);
             tableMetaInfoExtraService.initTableMetaInfoExtra(assessDate);
 
-            System.out.println(allTableNames);
+          //  System.out.println(allTableNames);
         } catch (TException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -147,7 +147,7 @@ public class TableMetaInfoServiceImpl extends ServiceImpl<TableMetaInfoMapper, T
 
         /// 进行递归操作
         getMetaFromHdfsRecurve(fileSystem, firstChildFileStatus, tableMetaInfo);
-        System.out.println(tableMetaInfo.getTableName() + ":tableSize" + tableMetaInfo.getTableSize());
+       // System.out.println(tableMetaInfo.getTableName() + ":tableSize" + tableMetaInfo.getTableSize());
 
         //1.4 赋予环境信息
         /// 文件系统总容量

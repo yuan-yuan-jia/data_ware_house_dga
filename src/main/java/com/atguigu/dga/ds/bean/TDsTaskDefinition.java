@@ -2,6 +2,7 @@ package com.atguigu.dga.ds.bean;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serializable;
@@ -133,4 +134,7 @@ public class TDsTaskDefinition implements Serializable {
      * update time
      */
     private Date updateTime;
+
+    @TableField(exist = false)
+    private String sql;
 }

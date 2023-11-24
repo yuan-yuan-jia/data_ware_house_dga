@@ -5,6 +5,7 @@ import com.atguigu.dga.ds.bean.TDsTaskInstance;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 public class AssessParam {
@@ -13,6 +14,8 @@ public class AssessParam {
     private GovernanceMetric governanceMetric;
 
     private List<TableMetaInfo> allTableMetaInfoList;
+
+    private Map<String,TableMetaInfo> allTableMetaInfoMap;
 
     // 表的任务定义
     private TDsTaskDefinition tDsTaskDefinition;

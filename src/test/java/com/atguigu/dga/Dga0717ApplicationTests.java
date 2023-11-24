@@ -24,7 +24,7 @@ class Dga0717ApplicationTests {
 
     @Test
     void testAssess() {
-        detailService.mainAssess("2023-05-01");
+        detailService.mainAssess("2023-05-02");
     }
 
 }

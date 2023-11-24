@@ -27,5 +27,18 @@
         <result column="create_time" property="createTime" />
         <result column="update_time" property="updateTime" />
     </resultMap>
+    <select id="getTaskDefinitionOfInstanceOfSuccessOnAssessDate"
+            resultType="com.atguigu.dga.ds.bean.TDsTaskDefinition">
+        select *
+        from t_ds_task_definition
+        where code in
+              (select task_code
+               from t_ds_task_instance t1
+               where id = (select max(id)
+                           from t_ds_task_instance t2
+                           where t1.name = t2.name
+                             and date_format(submit_time, '%Y-%m-%d') = '${assessDate}'
+                             and state = ${stateF}));
+    </select>
 
 </mapper>
