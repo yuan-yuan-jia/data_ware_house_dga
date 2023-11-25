@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
@@ -55,6 +56,14 @@ public class GovernanceAssessDetailServiceImpl extends ServiceImpl<GovernanceAss
     @Autowired
     TDsTaskInstanceService taskInstanceService;
 
+    ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
+            12,
+            500,
+            10L,
+            TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(500)
+    );
+
 
 
     public void mainAssess(String assessDate) {
@@ -77,6 +86,8 @@ public class GovernanceAssessDetailServiceImpl extends ServiceImpl<GovernanceAss
         Map<String, TDsTaskDefinition> taskDefinitionMap = taskDefinitionService.getTaskDefinitionMap(assessDate);
 
         List<GovernanceAssessDetail> governanceAssessDetails = new ArrayList<>(10);
+        List<CompletableFuture<GovernanceAssessDetail>> governanceAssessDetailFutures = new ArrayList<>(10);
+
         //3 对每张表每个指标进行考评 --> 生成考评结果明细
         for (TableMetaInfo tableMetaInfo : tableMetaInfoList) {
             for (GovernanceMetric metric : metrics) {
@@ -93,15 +104,27 @@ public class GovernanceAssessDetailServiceImpl extends ServiceImpl<GovernanceAss
                 assessParam.setAllTableMetaInfoMap(allTableMetaMap);
 
                 // 当前表当天的任务列表
-                List<TDsTaskInstance> tDsTaskInstances = taskInstanceListMap.get(tableMetaInfo.getSchemaName() + "." + tableMetaInfo.getTableName());
-                assessParam.setTDsTaskInstances(tDsTaskInstances);
+                CompletableFuture<GovernanceAssessDetail> governanceAssessDetailCompletableFuture = CompletableFuture.<GovernanceAssessDetail>supplyAsync(() -> {
 
+                    List<TDsTaskInstance> tDsTaskInstances = taskInstanceListMap.get(tableMetaInfo.getSchemaName() + "." + tableMetaInfo.getTableName());
+                    assessParam.setTDsTaskInstances(tDsTaskInstances);
+                    TDsTaskDefinition tDsTaskDefinition = taskDefinitionMap.get(tableMetaInfo.getSchemaName() + "." + tableMetaInfo.getTableName());
+                    assessParam.setTDsTaskDefinition(tDsTaskDefinition);
 
-                TDsTaskDefinition tDsTaskDefinition = taskDefinitionMap.get(tableMetaInfo.getSchemaName() + "." + tableMetaInfo.getTableName());
-                assessParam.setTDsTaskDefinition(tDsTaskDefinition);
+                    return assessor.metricAssess(assessParam);
 
-                GovernanceAssessDetail governanceAssessDetail = assessor.metricAssess(assessParam);
-                governanceAssessDetails.add(governanceAssessDetail);
+                },threadPoolExecutor);
+
+                governanceAssessDetailFutures.add(governanceAssessDetailCompletableFuture);
+
+            }
+        }
+        governanceAssessDetailFutures.forEach(CompletableFuture::join);
+        for (CompletableFuture<GovernanceAssessDetail> governanceAssessDetailFuture : governanceAssessDetailFutures) {
+            try {
+                governanceAssessDetails.add(governanceAssessDetailFuture.get());
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
             }
         }
         //4 把考评结果明细保存
