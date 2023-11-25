@@ -1,11 +1,15 @@
 package com.atguigu.dga.governance.assess.calc;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.atguigu.dga.ds.bean.TDsTaskDefinition;
 import com.atguigu.dga.governance.assess.Assessor;
 import com.atguigu.dga.governance.bean.AssessParam;
 import com.atguigu.dga.governance.bean.GovernanceAssessDetail;
+import com.atguigu.dga.governance.bean.TableMetaInfo;
 import com.atguigu.dga.governance.utils.SqlParse;
 import com.google.common.collect.Sets;
+import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hive.ql.lib.Dispatcher;
@@ -16,7 +20,9 @@ import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component("IS_SIMPLE_PROCESS")
 public class IsSimpleProcessAssessor extends Assessor {
@@ -35,6 +41,9 @@ public class IsSimpleProcessAssessor extends Assessor {
     @Override
     public void checkProblem(GovernanceAssessDetail governanceAssessDetail, AssessParam assessParam) {
         TDsTaskDefinition tDsTaskDefinition = assessParam.getTDsTaskDefinition();
+        if (tDsTaskDefinition == null) {
+            return;
+        }
         String sql = tDsTaskDefinition.getSql();
         if (StringUtils.isEmpty(sql) || sql.trim().isEmpty()) {
             return;
@@ -49,16 +58,67 @@ public class IsSimpleProcessAssessor extends Assessor {
             throw new RuntimeException(e);
         }
 
-        System.out.println();
+        // 根据采集结果进行判断
+        /// 是否有复杂字段
+        Map<String, TableMetaInfo> allTableMetaInfoMap = assessParam.getAllTableMetaInfoMap();
+        /// 如果没有复杂计算 把where过滤的字段和表分区字段进行比较
+        Set<String> fromTableSet = checkSimpleDispatcher.getFromTableSet();
+        Set<String> filedAfterWhereTokenSet = checkSimpleDispatcher.getFiledAfterWhereTokenSet();
+        Set<String> complicationTokenSet = checkSimpleDispatcher.complicationTokenSet;
+        boolean isAllPartitionField = true;
+        List<String> noPartitionFieldNames = new ArrayList<>();
+
+        if (checkSimpleDispatcher.getComplicationTokenSet().isEmpty()) {
+
+            // 只有一张表的情况,如果where后的过滤字段都是分区字段给差评,///- 如果都是分区字段则给差评
+            if (fromTableSet.size() == 1) {
+                for (String fromTableName : fromTableSet) {
+                    TableMetaInfo fromTableMetaInfo = allTableMetaInfoMap.get(fromTableName);
+                    if (fromTableMetaInfo != null) {
+                        // 获取分区信息
+                        String partitionColNameJson = fromTableMetaInfo.getPartitionColNameJson();
+                        List<JSONObject> partitionInfoJSONObject = JSON.parseArray(partitionColNameJson, JSONObject.class);
+                        Set<String> filterFieldNames = partitionInfoJSONObject.stream().map(j -> {
+                            return j.getString("name");
+                        }).collect(Collectors.toSet());
+
+                        // 检查where后每个字段是否都是分区字段
+
+                        for (String s : filedAfterWhereTokenSet) {
+                            if (!filterFieldNames.contains(s)) {
+                                isAllPartitionField = false;
+                                noPartitionFieldNames.add(s);
+                            }
+                        }
+
+                    }
+
+
+                }
+                if (isAllPartitionField) {
+                    governanceAssessDetail.setAssessScore(BigDecimal.ZERO);
+                    governanceAssessDetail.setAssessProblem("属于简单处理，不含复杂处理元素，且过滤字段均为分区字段");
+                }else{
+                    governanceAssessDetail.setAssessComment("不含复杂计算，但包含非分区字段:" + StringUtils.join(noPartitionFieldNames,","));
+                }
+            }
+
+        }else {
+            governanceAssessDetail.setAssessComment("包含复杂计算，字段为：" + StringUtils.join(complicationTokenSet,",") );
+        }
+
 
 
     }
 
     static class CheckSimpleDispatcher implements Dispatcher {
 
+        @Getter
         Set<String> complicationTokenSet = new HashSet<>();
+       @Getter
         Set<String> fromTableSet = new HashSet<>();
 
+       @Getter
         Set<String> filedAfterWhereTokenSet = new HashSet<>();
 
 
