@@ -31,7 +31,7 @@ public class AssessScheduler {
     String assessSchemaNames;
 
 
-    @Scheduled(cron = "3 3 10 * * *")
+    @Scheduled(cron = "3 6 11 * * *")
     public void exec() {
         System.out.println("定时执行: " + new Date());
         mainAssess();

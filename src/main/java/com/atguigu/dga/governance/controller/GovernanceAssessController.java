@@ -12,6 +12,7 @@ import com.atguigu.dga.governance.service.GovernanceAssessTecOwnerService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -96,6 +97,27 @@ public class GovernanceAssessController {
 
         Map<String, Object> map = assessDetailService.getMap(governanceAssessDetailQueryWrapper);
         return JSON.toJSONString(map);
+    }
+
+    @GetMapping("/problemList/{governType}/{pageNo}/{pageSize}")
+    public String getProblemList(@PathVariable("governType") String governType,
+                                 @PathVariable("pageNo") int pageNo,
+                                 @PathVariable("pageSize") int pageSize
+                                 ) {
+
+
+        int rowNo = (pageNo - 1) * pageSize;
+
+        QueryWrapper<GovernanceAssessDetail> queryWrapper = new QueryWrapper<GovernanceAssessDetail>()
+                .inSql("assess_date",
+                        "select max(assess_date) from governance_assess_detail"
+                ).eq("governance_type", governType)
+                .lt("assess_score", 10)
+                .last("limit " + rowNo + "," + pageSize);
+
+        List<GovernanceAssessDetail> list = assessDetailService.list(queryWrapper);
+        return JSON.toJSONString(list);
+
     }
 
 }
