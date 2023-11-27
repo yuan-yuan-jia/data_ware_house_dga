@@ -10,10 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -122,6 +119,87 @@ public class GovernanceLineageTableController {
     }
 
 
+    @GetMapping("/child/{tableName}")
+    public String getChildren(@RequestParam("relation") String relation,
+                              @PathVariable String tableName) {
+
+        //1 有括号的表(有括号，是页面因为避免表名重复而增加的后缀，去掉括号部分
+        if(tableName.indexOf("(")>0){
+            int suffixIdx = tableName.indexOf("(");
+            tableName=tableName.substring(0,suffixIdx);
+
+        }
+        // 查询该表的血缘对象
+        String[] tableNameWithSchema = tableName.split("\\.");
+        String schemaName = tableNameWithSchema[0];
+        String tableName1 = tableNameWithSchema[1];
+
+        QueryWrapper<GovernanceLineageTable> queryWrapper = new QueryWrapper<GovernanceLineageTable>()
+                .eq("schema_name", schemaName)
+                .eq("table_name", tableName1)
+                .inSql("governance_date",
+                        "select max(governance_date) from governance_lineage_table"
+                );
+        GovernanceLineageTable lineageTable = lineageTableService.getOne(queryWrapper);
+        if (lineageTable == null) {
+            log.warn(tableName + "is not exists");
+            return "{error:ee}";
+        }
+
+        //提取所有表的元数据
+        List<TableMetaInfo> tableMetaInfoWithExtraList = tableMetaInfoService.getTableMetaInfoWithExtraList(lineageTable.getGovernanceDate());
+        Map<String, TableMetaInfo> tableNameToMetaInfo = tableMetaInfoWithExtraList.stream()
+                .collect(Collectors.toMap((t) -> {
+                    return t.getSchemaName() + "." + t.getTableName();
+                }, i -> i));
+
+        // 准备一个childrenList
+        List<JSONObject> children = new ArrayList<>();
+
+        if ("sink".equals(relation)) {
+            String sinkTables = lineageTable.getSinkTables();
+            if (!StringUtils.isEmpty(sinkTables)) {
+
+                List<String> sinkTableNameArray = JSON.parseArray(sinkTables, String.class);
+
+                for (String sinkTableName : sinkTableNameArray) {
+                    TableMetaInfo sinkTableMetaInfo = tableNameToMetaInfo.get(sinkTableName);
+                    if (sinkTableMetaInfo == null) {
+                        log.warn(sinkTableName + ": do not have metaInfo");
+                    }else {
+                        JSONObject jsonObject = new JSONObject();
+                        jsonObject.put("id",sinkTableName);
+                        jsonObject.put("relation","sink");
+                        jsonObject.put("comment",sinkTableMetaInfo.getTableComment());
+                        children.add(jsonObject);
+                    }
+                }
+            }
+        }else if ("source".equals(relation)) {
+            String sourceTables = lineageTable.getSourceTables();
+            if (!StringUtils.isEmpty(sourceTables)) {
+
+                List<String> sourceTableNameArray = JSON.parseArray(sourceTables, String.class);
+
+                for (String sourceTableName : sourceTableNameArray) {
+                    TableMetaInfo sourceTableMetaInfo = tableNameToMetaInfo.get(sourceTableName);
+                    if (sourceTableMetaInfo == null) {
+                        log.warn(sourceTableName + ": do not have metaInfo");
+                    }else {
+                        JSONObject jsonObject = new JSONObject();
+                        jsonObject.put("id",sourceTableName);
+                        jsonObject.put("relation","source");
+                        jsonObject.put("comment",sourceTableMetaInfo.getTableComment());
+                        children.add(jsonObject);
+                    }
+                }
+            }
+        }
+
+
+        return JSON.toJSONString(children);
+
+    }
 
 
 }
