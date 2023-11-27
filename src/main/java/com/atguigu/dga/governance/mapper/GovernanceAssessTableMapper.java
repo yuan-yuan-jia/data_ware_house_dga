@@ -1,6 +1,8 @@
 package com.atguigu.dga.governance.mapper;
 
+import com.atguigu.dga.governance.bean.GovernanceAssessGlobal;
 import com.atguigu.dga.governance.bean.GovernanceAssessTable;
+import com.atguigu.dga.governance.bean.GovernanceAssessTecOwner;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
@@ -42,4 +44,35 @@ public interface GovernanceAssessTableMapper extends BaseMapper<GovernanceAssess
             "where assess_date=#{assessDate}" +
             "group by assess_date,table_name,schema_name,tec_owner")
     List<GovernanceAssessTable> getAssessTableDetail(@Param("assessDate") String assessDate);
+
+
+    @Select("SELECT assess_date,\n" +
+            "       tec_owner,\n" +
+            "       avg(score_spec_avg) score_spec,\n" +
+            "       avg(score_storage_avg) score_storage,\n" +
+            "       avg(score_calc_avg) score_calc,\n" +
+            "       avg(score_security_avg) score_security,\n" +
+            "       avg(score_on_type_weight) score,\n" +
+            "       count(*) table_num,\n" +
+            "       sum(problem_num) problem_num,\n" +
+            "       now() create_time    \n" +
+            "from governance_assess_table\n" +
+            "where assess_date = '${assess_date}'\n" +
+            "GROUP by tec_owner,assess_date")
+    List<GovernanceAssessTecOwner> getAssessTecOwnerByTable(@Param("assess_date") String assess_date);
+
+
+    @Select("SELECT assess_date,\n" +
+            "       avg(score_spec_avg) score_spec,\n" +
+            "       avg(score_storage_avg) score_storage,\n" +
+            "       avg(score_calc_avg) score_calc,\n" +
+            "       avg(score_security_avg) score_security,\n" +
+            "       avg(score_on_type_weight) score,\n" +
+            "       count(*) table_num,\n" +
+            "       sum(problem_num) problem_num,\n" +
+            "       now() create_time    \n" +
+            "from governance_assess_table\n" +
+            "where assess_date = '${assess_date}'")
+    GovernanceAssessGlobal getAssessGlobalByTable(@Param("assess_date") String assess_date);
+
 }

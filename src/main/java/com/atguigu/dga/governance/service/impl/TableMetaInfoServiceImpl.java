@@ -104,7 +104,7 @@ public class TableMetaInfoServiceImpl extends ServiceImpl<TableMetaInfoMapper, T
                 tableMetaInfo.setAssessDate(assessDate);
                 tableMetaInfo.setCreateTime(new Date());
                // System.out.println(tableMetaInfo);
-               // tableMetaInfos.add(tableMetaInfo);
+                tableMetaInfos.add(tableMetaInfo);
 
             }
 

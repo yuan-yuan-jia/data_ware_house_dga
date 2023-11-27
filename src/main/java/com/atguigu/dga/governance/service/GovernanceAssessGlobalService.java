@@ -13,4 +13,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface GovernanceAssessGlobalService extends IService<GovernanceAssessGlobal> {
 
+    public void genAssessGlobalByTable(String assessDate);
 }

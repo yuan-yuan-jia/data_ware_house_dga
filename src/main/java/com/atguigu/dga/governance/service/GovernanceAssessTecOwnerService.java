@@ -13,4 +13,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface GovernanceAssessTecOwnerService extends IService<GovernanceAssessTecOwner> {
 
+    public void genAssessTecOwnerByTable(String assessDate);
 }
