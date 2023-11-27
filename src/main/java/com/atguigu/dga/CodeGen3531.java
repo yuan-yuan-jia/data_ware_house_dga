@@ -15,7 +15,7 @@ public class CodeGen3531 {
           // String[] tables={ "governance_metric","governance_type","governance_assess_detail"};
           //String[] tables={ "t_ds_task_definition","t_ds_task_instance"};
        // String[] tables={ "table_meta_info_extra"  };
-        String[] tables={ "governance_assess_global","governance_assess_tec_owner","governance_assess_table"};
+        String[] tables={ "governance_lineage_table"};
 
         FastAutoGenerator.create("jdbc:mysql://hadoop102:3306/dga_0717","root","000000")
                 .globalConfig(builder -> {
@@ -26,7 +26,7 @@ public class CodeGen3531 {
                 })
                 .packageConfig(builder -> {                 //各个package 名称
                     builder.parent("com.atguigu.dga")
-                            .moduleName("governance")
+                            .moduleName("lineage")
                             .entity("bean")
                             .service("service")
                             .serviceImpl("service.impl")
