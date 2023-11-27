@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2023-11-25
  */
 @RestController
-@RequestMapping("/governance/governanceAssessTable")
 public class GovernanceAssessTableController {
 
 }

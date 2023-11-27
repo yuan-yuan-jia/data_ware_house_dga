@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2023-11-21
  */
 @RestController
-@RequestMapping("/governance/governanceAssessDetail")
+
 public class GovernanceAssessDetailController {
 
 }
