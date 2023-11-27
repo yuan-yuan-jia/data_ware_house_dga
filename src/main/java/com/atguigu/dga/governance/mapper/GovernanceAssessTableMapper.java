@@ -52,6 +52,7 @@ public interface GovernanceAssessTableMapper extends BaseMapper<GovernanceAssess
             "       avg(score_storage_avg) score_storage,\n" +
             "       avg(score_calc_avg) score_calc,\n" +
             "       avg(score_security_avg) score_security,\n" +
+            "       avg(score_quality_avg) score_quality,\n" +
             "       avg(score_on_type_weight) score,\n" +
             "       count(*) table_num,\n" +
             "       sum(problem_num) problem_num,\n" +
@@ -67,6 +68,7 @@ public interface GovernanceAssessTableMapper extends BaseMapper<GovernanceAssess
             "       avg(score_storage_avg) score_storage,\n" +
             "       avg(score_calc_avg) score_calc,\n" +
             "       avg(score_security_avg) score_security,\n" +
+            "       avg(score_quality_avg) score_quality,\n" +
             "       avg(score_on_type_weight) score,\n" +
             "       count(*) table_num,\n" +
             "       sum(problem_num) problem_num,\n" +
